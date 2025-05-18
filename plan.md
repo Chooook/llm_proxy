@@ -1,9 +1,9 @@
 1. [x] Разделить requirements частей проекта в свои файлы
-2. [ ] Переделать backend с flask на fastapi+uvicorn+fastapi-sse
-3. [ ] Добавить postgres бд, использовать асинхронно (tortoise_db, asyncpg)
-4. [ ] Реализовать search как api на fastapi+uvicorn
-5. [ ] Переделать frontend на react (npm+)
-6. [ ] Добавить redis или celery+redis вместо sqlite (redis, celery, redis unix)
+2. [ ] Переделать backend с flask на fastapi+uvicorn+sse_starlette
+3. [ ] Добавить redis вместо sqlite (redis, redis unix)
+4. [ ] Реализовать search как api на fastapi+uvicorn, подключить очередь redis
+5. [ ] Добавить postgres бд, использовать асинхронно (tortoise_db, asyncpg)
+6. [ ] Переделать frontend на react (npm+)
 7. [ ] Реализовать мониторинг всего что только можно (loguru, prometheus, grafana)
 8. [ ] Реализовать контроль зависимостей для разных пакетных менеджеров
 9. [ ] Переделать всё на docker-compose
