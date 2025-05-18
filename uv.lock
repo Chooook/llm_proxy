@@ -205,18 +205,14 @@ name = "llm-worker"
 version = "0.1.0"
 source = { virtual = "llm_worker" }
 dependencies = [
-    { name = "fastapi" },
     { name = "loguru" },
     { name = "redis" },
-    { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", specifier = ">=0.115.12" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "redis", specifier = ">=6.1.0" },
-    { name = "uvicorn", specifier = ">=0.34.2" },
 ]
 
 [[package]]
