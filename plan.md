@@ -1,6 +1,6 @@
 1. [x] Разделить requirements частей проекта в свои файлы
-2. [ ] Переделать backend с flask на fastapi+uvicorn+sse_starlette
-3. [ ] Добавить redis вместо sqlite (redis, redis unix)
+2. [x] Переделать backend с flask на fastapi+uvicorn+sse_starlette
+3. [x] Добавить redis вместо sqlite (redis, redis unix)
 4. [ ] Реализовать search как api на fastapi+uvicorn, подключить очередь redis
 5. [ ] Добавить postgres бд, использовать асинхронно (tortoise_db, asyncpg)
 6. [ ] Переделать frontend на react (npm+)
