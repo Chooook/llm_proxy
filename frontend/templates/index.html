@@ -1,93 +1,82 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>База знаний</title>
+        <title>База знаний Службы внутреннего аудита</title>
         <link rel="stylesheet" href="/static/style.css">
         <script src="/static/main.js"></script>
     </head>
-
+ 
     <body>
         <header>
             <div class="container">
-                <div class="logo">База знаний</div>
+                <div class="logo">База знаний Службы внутреннего аудита</div>
                 <div class="tagline">
                     Все ответы на ваши вопросы в одном месте.
                     Найдите нужную информацию или поделитесь своими знаниями.
                 </div>
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">🌙</span>
+                </div>
             </div>
         </header>
-
-        <div class="container">
+ 
+        <div class="container main-content">
             <div class="backend-demo">
                 <h1>Поиск по базе знаний</h1>
                 <div class="search-wrapper">
-                    <textarea id="inputParam" placeholder="Введите текст для поиска..."></textarea>
+                    <textarea id="inputParam" placeholder="Что вас интересует?" autofocus></textarea>
                     <button class="backend-btn" onclick="startTask()">🔍</button>
                 </div>
                 <div class="divider" id="taskDivider"></div>
                 <div id="tasks"></div>
             </div>
         </div>
-
-        <!-- Блок drag and drop -->
-        <div class="drop-zone" id="dropZone">
-            <h2>Перетащите файлы сюда</h2>
-            <p>или</p>
-            <input type="file" id="fileInput" multiple style="display: none;">
-            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                Выбрать файлы
-            </button>
-            <div class="progress-bar" id="progressBar">
-                <div class="progress" id="progress"></div>
-            </div>
-            <ul class="file-list" id="fileList"></ul>
-        </div>
-
+ 
         <div class="categories">
             <div class="category-card" onclick="fetchCategory('documentation')">
-                <div class="category-icon">📚</div>
+                <div class="category-icon">📄</div>
                 <h3 class="category-title">Документация</h3>
                 <p class="category-desc">Официальная документация по продуктам и сервисам компании</p>
             </div>
-
+ 
             <div class="category-card" onclick="fetchCategory('faq')">
-                <div class="category-icon">💡</div>
+                <div class="category-icon">❓</div>
                 <h3 class="category-title">Частые вопросы</h3>
                 <p class="category-desc">Ответы на наиболее популярные вопросы пользователей</p>
             </div>
-
+ 
             <div class="category-card" onclick="fetchCategory('solutions')">
-                <div class="category-icon">🛠️</div>
+                <div class="category-icon">🔧</div>
                 <h3 class="category-title">Решения проблем</h3>
                 <p class="category-desc">Пошаговые инструкции по устранению типовых проблем</p>
             </div>
-
+ 
             <div class="category-card" onclick="fetchCategory('analytics')">
                 <div class="category-icon">📊</div>
                 <h3 class="category-title">Аналитика</h3>
                 <p class="category-desc">Отчеты, исследования и аналитические материалы</p>
-            </div>
-
+           </div>
+ 
             <div class="category-card" onclick="fetchCategory('education')">
                 <div class="category-icon">🎓</div>
                 <h3 class="category-title">Обучение</h3>
                 <p class="category-desc">Обучающие материалы, курсы и руководства</p>
             </div>
-
+ 
             <div class="category-card" onclick="fetchCategory('add_article')">
-                <div class="category-icon">➕</div>
+                <div class="category-icon">✏️</div>
                 <h3 class="category-title">Добавить статью</h3>
                 <p class="category-desc">Поделитесь своими знаниями с коллегами</p>
             </div>
         </div>
-
+ 
         <footer>
             <div class="container">
-                <p>© 2025 База знаний компании. Все права защищены.</p>
-            </div>
+                <p>© 2025 База знаний Службы внутреннего аудита. Все права защищены.</p>
+           </div>
         </footer>
-
+ 
     </body>
 </html>

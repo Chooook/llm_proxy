@@ -26,31 +26,32 @@ function addTaskToUI(taskId) {
     taskDiv.id = `task-${taskId}`;
     taskDiv.innerHTML = `
         <div class="task-header">
-            <span class="task-title">Задача: ${taskId}</span>
+            <span class="task-title">Вопрос: </span>
         </div>
-        <div class="status status-waiting">Статус: ожидание</div>
+        <div class="status status-waiting">
+            Статус: ожидание
+            <img src="/static/loading.gif" class="loading-gif" alt="Загрузка...">
+        </div>
         <div class="result" id="result-${taskId}"></div>
         <div class="toggle-container">
             <button class="toggle-btn" id="btn-${taskId}" onclick="toggleResult('${taskId}')">
                 <span class="icon">−</span>
             </button>
-        </div>
-    `;
+        </div>`;
 
     const container = document.getElementById('tasks');
     container.insertBefore(taskDiv, container.firstChild);
-
-    // Показываем разделитель, если это первая задача
+ 
     const divider = document.getElementById('taskDivider');
     if (container.children.length === 1) {
         divider.classList.add('show');
     }
-
-    // Запуск анимации появления задачи
+ 
     requestAnimationFrame(() => {
         taskDiv.classList.add('animate');
     });
 }
+
 
 function updateStatus(taskId, status, result = '') {
     const el = document.getElementById(`task-${taskId}`);
@@ -58,13 +59,28 @@ function updateStatus(taskId, status, result = '') {
         const statusEl = el.querySelector('.status');
         const resultEl = document.getElementById(`result-${taskId}`);
         const toggleBtnContainer = el.querySelector('.toggle-container');
-
+        const loadingGif = statusEl.querySelector('.loading-gif');
+ 
         // Обновляем статус
         statusEl.textContent = `Статус: ${status}`;
         statusEl.className = 'status'; // Сбрасываем классы
-        if (status === 'ожидание') statusEl.classList.add('status-waiting');
-        else if (status === 'выполнено') statusEl.classList.add('status-done');
-        else if (status === 'ошибка') statusEl.classList.add('status-error');
+        
+        // Добавляем гиф-картинку обратно, если статус "ожидание"
+        if (status === 'ожидание') {
+            statusEl.classList.add('status-waiting');
+            if (!loadingGif) {
+                const gif = document.createElement('img');
+                gif.src = '/static/loading.gif';
+                gif.className = 'loading-gif';
+                gif.alt = 'Загрузка...';
+                statusEl.appendChild(gif);
+            }
+        } else if (status === 'выполнено') {
+            statusEl.classList.add('status-done');
+        } else if (status === 'ошибка') {
+            statusEl.classList.add('status-error');
+        }
+
 
         const icon = document.querySelector(`#btn-${taskId} .icon`);
 
@@ -279,6 +295,51 @@ function updateFileStatus(response) {
     });
 }
 
+// Обработчик placeholder для textarea
+const inputParam = document.getElementById('inputParam');
+inputParam.addEventListener('focus', function() {
+    if (this.value === '' && this.placeholder === 'Что вас интересует?') {
+        this.placeholder = '';
+    }
+});s
+
+inputParam.addEventListener('blur', function() {
+    if (this.value === '') {
+        this.placeholder = 'Что вас интересует?';
+    }
+});
+
+// Функция переключения темы
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (currentTheme === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+// Проверка сохраненной темы при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '??';
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeIcon.textContent = '??';
+    }
+});
+
+
 // Drag and drop функционал
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -305,3 +366,4 @@ fileInput.addEventListener('change', function() {
 });
 
 dropZone.addEventListener('drop', handleDrop, false);
+
