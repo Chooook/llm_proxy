@@ -7,7 +7,6 @@ from llama_cpp import Llama
 from llama_cpp import (
     ChatCompletionRequestSystemMessage,
     ChatCompletionRequestUserMessage,
-    ChatCompletionRequestAssistantMessage,
 )
 from loguru import logger
 
