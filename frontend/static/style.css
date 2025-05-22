@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #3a48a4;
-    --secondary-color: #231d75;
+    --primary-color: #4361ee;
+    --secondary-color: #3f37c9;
     --accent-color: #4895ef;
     --light-color: #f8f9fa;
     --dark-color: #212529;
@@ -13,7 +13,7 @@
 }
 
 [data-theme="dark"], body.dark {
-    --primary-color: #5365a4;
+    --primary-color: #3a4bb0;
     --secondary-color: #2d2d99;
     --accent-color: #3a7bc8;
     --light-color: #2d3748;
@@ -23,7 +23,17 @@
     --text-color: #f8f9fa;
     --header-bg: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     --card-bg: #2d3748;
-    --border-color: #2f3b4d;
+    --border-color: #3f4c66;
+}
+
+body.dark {
+    --primary-color: #36548f;
+    --secondary-color: #444;
+    --accent-color: #888;
+    --light-color: #333;
+    --dark-color: #f1f1f1;
+    background-color: #121212;
+    color: var(--dark-color);
 }
 
 * {
@@ -63,7 +73,7 @@ header {
     left: 0;
     right: 0;
     z-index: 1000;
-    height: 60px;
+    height: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -98,7 +108,7 @@ header {
 
 .search-input {
     width: 100%;
-    padding: 1rem 50px 1rem 1.5rem;
+    padding: 1rem 1rem 1rem 1.5rem;
     border: none;
     border-radius: 50px;
     font-size: 1rem;
@@ -178,6 +188,7 @@ footer {
     bottom: 0;
     left: 0;
     right: 0;
+    background: var(--bg-color);
     z-index: 1000;
     height: 40px;
     display: flex;
@@ -244,7 +255,7 @@ footer {
 }
 
 .backend-btn:hover {
-    background-color: var(--accent-color);
+    background-color: var(--border-color);
     transform: translateY(-2px);
 }
 
@@ -379,27 +390,6 @@ footer {
     }
 }
 
-@media (max-width: 768px) {
-    .backend-demo {
-        padding: 1rem;
-    }
-
-    .backend-demo h1 {
-        font-size: 1.3rem;
-    }
-
-    #inputParam {
-        min-height: 80px;
-        font-size: 15px;
-    }
-
-    .backend-btn {
-        padding: 6px 12px;
-        font-size: 14px;
-    }
-}
-
-/* Drag and Drop Styles */
 .drop-zone {
     max-width: 600px;
     margin: 2rem auto;
@@ -481,7 +471,7 @@ footer {
     resize: vertical;
     box-sizing: border-box;
     line-height: 1.5em;
-    white-space: pre-wrap; /* перенос слов */
+    white-space: pre-wrap;
     word-wrap: break-word;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -622,6 +612,33 @@ footer {
     transition: transform 0.2s ease;
 }
 
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.result-actions button {
+    background-color: var(--light-color);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.result-actions button:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.result-actions .active {
+    background-color: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
 .result {
     opacity: 0;
     max-height: 0;
@@ -649,7 +666,7 @@ footer {
 
 .result.show {
     opacity: 1;
-    max-height: 500px; /* адаптируй под себя */
+    max-height: 700px;
     overflow-y: auto;
     background-color: var(--border-color);
     padding: 10px;
@@ -692,16 +709,6 @@ footer {
     cursor: pointer;
 }
 
-body.dark {
-    --primary-color: #36548f;
-    --secondary-color: #444;
-    --accent-color: #888;
-    --light-color: #333;
-    --dark-color: #f1f1f1;
-    background-color: #121212;
-    color: var(--dark-color);
-}
-
 #sidebar {
     width: 250px;
     background-color: var(--card-bg);
@@ -709,9 +716,9 @@ body.dark {
     transition: all 0.3s;
     overflow-y: auto;
     border-right: 1px solid var(--border-color);
-    height: calc(100vh - 60px);
+    height: calc(100vh - 100px);
     position: fixed;
-    top: 60px;
+    top: 100px;
     left: 0;
     z-index: 900;
 }

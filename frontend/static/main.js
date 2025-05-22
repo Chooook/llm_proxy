@@ -1,10 +1,8 @@
-
-// Получаем адрес бэкенда из .env по route из текущего приложения flask
+﻿// Получаем адрес бэкенда из .env по route из текущего приложения flask
 let BACKEND_URL;
 fetch('/config').then(res => res.json()).then(config => {
     BACKEND_URL = config.BACKEND_URL;
 });
-console.log(BACKEND_URL);
 
 const sidebar = document.getElementById('sidebar');
 const sidebarContent = document.getElementById('sidebar-content');
@@ -17,22 +15,35 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSidebarItemsVisibility();
     });
 });
+const textarea = document.getElementById("inputParam");
+textarea.addEventListener(
+    'keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            setTimeout(() => {
+                textarea.value = textarea.value.replace(/\n$/, ""); // Удаляем добавленный перенос
+            }, 0);
+            startTask();
+        }
+    }
+);
 
 function startTask() {
-    fetch(`${BACKEND_URL}/api/v1/submit`, {
+    const questionText = document.getElementById('inputParam').value;
+    fetch(`${BACKEND_URL}/api/enqueue`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ prompt: `${document.getElementById('inputParam').value}`, task_type: 'generate' })
+        body: JSON.stringify({ input: `${document.getElementById('inputParam').value}` })
     })
     .then(res => res.json())
     .then(data => {
         const taskId = data.task_id;
-        addTaskToUI(taskId);
+        addTaskToUI(taskId, questionText);
         subscribeToTask(taskId);
     });
 }
 
-function addTaskToUI(taskId) {
+function addTaskToUI(taskId, questionText) {
     const taskDiv = document.createElement('div');
     taskDiv.className = 'backend-response';
     taskDiv.id = `task-${taskId}`;
@@ -40,6 +51,7 @@ function addTaskToUI(taskId) {
         <div class="task-header">
             <span class="task-title">Вопрос: </span>
         </div>
+        <div class="question-text">Вопрос: ${questionText}</div>
         <div class="status status-waiting">
             Статус: ожидание
             <img src="/static/loading.gif" class="loading-gif" alt="Загрузка...">
@@ -50,8 +62,7 @@ function addTaskToUI(taskId) {
                 <span class="icon">−</span>
             </button>
         </div>`;
-
-    addSidebarItem()
+    addSidebarItem(taskId, questionText)
     const container = document.getElementById('tasks');
     container.insertBefore(taskDiv, container.firstChild);
 
@@ -65,7 +76,7 @@ function addTaskToUI(taskId) {
     });
 }
 
-function addSidebarItem(text, taskId) {
+function addSidebarItem(taskId, text) {
     const item = document.createElement('div');
     item.className = 'sidebar-item';
     item.dataset.fullText = text;
@@ -138,7 +149,14 @@ function updateStatus(taskId, status, result = '') {
 
         if (result) {
             try {
-                resultEl.textContent = JSON.parse(`${result}`);
+                const parsedResult = JSON.parse(`${result}`);
+                resultEl.innerHTML = `
+            <div class="result-text">${parsedResult}</div>
+            <div class="result-actions">
+                <button class="like-btn" onclick="handleFeedback('${taskId}', 'like', this)">👍</button>
+                <button class="dislike-btn" onclick="handleFeedback('${taskId}', 'dislike', this)">👎</button>
+                <button class="copy-btn" onclick="copyToClipboard('${taskId}', this)">📋</button>
+            </div>`;
             } catch (e) {
                 resultEl.textContent = result;
             }
@@ -176,12 +194,11 @@ function toggleResult(taskId) {
 }
 
 function subscribeToTask(taskId) {
-    const eventSource = new EventSource(`${BACKEND_URL}/api/v1/stream/${taskId}`);
+    const eventSource = new EventSource(`${BACKEND_URL}/api/subscribe/${taskId}`);
     eventSource.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
-            console.log(data)
-            if (data.status === 'completed') {
+            if (data.status === 'done') {
                 updateStatus(taskId, 'выполнено', data.result);
                 eventSource.close();
             } else if (data.status === 'failed') {
@@ -223,186 +240,58 @@ function fetchCategory(category) {
         });
 }
 
-// function fetchData() {
-//     const param = document.getElementById('inputParam').value;
-//     const responseDiv = document.getElementById('backendResponse');
-//
-//     responseDiv.textContent = "Отправка запроса...";
-//
-//     fetch(`$BACKEND_URL/api/data?param=${encodeURIComponent(param)}`)
-//         .then(response => {
-//             if (!response.ok) {
-//                 throw new Error('Ошибка сети');
-//             }
-//             return response.json();
-//         })
-//         .then(data => {
-//             if (data.error) {
-//                 responseDiv.textContent = `Ошибка: ${data.error}`;
-//             } else {
-//                 responseDiv.textContent = `Ответ от Gigachat: ${data.response}`;
-//             }
-//         })
-//         .catch(error => {
-//             console.error('Ошибка:', error);
-//             responseDiv.textContent = `Произошла ошибка: ${error.message}`;
-//         });
-// }
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function highlight() {
-    dropZone.classList.add('highlight');
-}
-
-function unhighlight() {
-    dropZone.classList.remove('highlight');
-}
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    files = dt.files;
-    handleFiles(files);
-}
-
-function handleFiles(files) {
-    fileList.innerHTML = '';
-    [...files].forEach(file => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${file.name} (${formatFileSize(file.size)})</span>
-            <span class="status">Ожидает загрузки</span>
-        `;
-        fileList.appendChild(li);
-    });
-
-    uploadFiles();
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function uploadFiles() {
-    if (files.length === 0) return;
-
-    const formData = new FormData();
-    [...files].forEach(file => {
-        formData.append('files', file);
-    });
-
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            progressBar.style.width = percentComplete + '%';
-        }
-    };
-
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-           const response = JSON.parse(xhr.response);
-            updateFileStatus(response);
-            progressBar.style.width = '0%';
-        } else {
-            alert('Ошибка загрузки файлов');
-        }
-    };
-
-    xhr.open('POST', `$BACKEND_URL/api/upload`, true);
-    xhr.send(formData);
-}
-
-function updateFileStatus(response) {
-    const items = fileList.querySelectorAll('li');
-    items.forEach((item, index) => {
-        const status = item.querySelector('.status');
-        if (response.success && response.success.includes(files[index].name)) {
-            status.textContent = 'Успешно загружен';
-            status.style.color = 'green';
-        } else {
-            status.textContent = 'Ошибка загрузки';
-            status.style.color = 'red';
-        }
-    });
-}
-
-// Обработчик placeholder для textarea
-const inputParam = document.getElementById('inputParam');
-inputParam.addEventListener('focus', function() {
-    if (this.value === '' && this.placeholder === 'Что вас интересует?') {
-        this.placeholder = '';
-    }
-});
-
-inputParam.addEventListener('blur', function() {
-    if (this.value === '') {
-        this.placeholder = 'Что вас интересует?';
-    }
-});
-
-// Функция переключения темы
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
-    const themeIcon = document.getElementById('theme-icon');
 
     if (currentTheme === 'dark') {
         document.documentElement.removeAttribute('data-theme');
-        themeIcon.textContent = '🌙';
         localStorage.setItem('theme', 'light');
     } else {
         document.documentElement.setAttribute('data-theme', 'dark');
-        themeIcon.textContent = '🌙';
         localStorage.setItem('theme', 'dark');
     }
 }
 
-// Проверка сохраненной темы при загрузке
+function handleFeedback(taskId, type, button) {
+    const parent = button.parentElement;
+    [...parent.children].forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    // При желании можно отправить feedback на бэкенд:
+   /*
+    fetch(`${BACKEND_URL}/api/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, feedback: type })
+    });
+    */
+}
+
+function copyToClipboard(taskId, button) {
+    const resultEl = document.querySelector(`#result-${taskId} .result-text`);
+    navigator.clipboard.writeText(resultEl.textContent)
+        .then(() => {
+            button.textContent = '✅';
+            setTimeout(() => {
+                button.textContent = '📋';
+            }, 1500);
+        })
+        .catch(err => {
+            console.error('Ошибка копирования:', err);
+        });
+}
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     const themeIcon = document.getElementById('theme-icon');
 
     if (savedTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
-        themeIcon.textContent = '??';
+        themeIcon.textContent = '🌙';
     } else {
         document.documentElement.removeAttribute('data-theme');
-        themeIcon.textContent = '??';
+        themeIcon.textContent = '🌙';
     }
 });
-
-
-// Drag and drop функционал
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const fileList = document.getElementById('fileList');
-const progressBar = document.getElementById('progress');
-let files = [];
-
-// Обработчики событий для drag and drop
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, preventDefaults, false);
-});
-
-fileInput.addEventListener('change', function() {
-    files = this.files;
-    handleFiles(files);
-});
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, unhighlight, false);
-});
-
-dropZone.addEventListener('drop', handleDrop, false);
