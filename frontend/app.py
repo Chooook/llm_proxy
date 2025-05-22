@@ -1,14 +1,13 @@
-import os
+import sys
+from pathlib import Path
 
-from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template
 
-from utils import wait_for_server
+sys.path.append(str(Path(__file__).parent.parent))
 
-dotenv_path = '../.env'
-load_dotenv(dotenv_path)
-BACKEND_URL = f'http://{os.getenv("HOST")}:{os.getenv("BACKEND_PORT")}'
-wait_for_server(BACKEND_URL)
+from settings import settings
+
+BACKEND_URL = f'http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}'
 
 app = Flask(__name__)
 

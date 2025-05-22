@@ -6,11 +6,23 @@ fetch('/config').then(res => res.json()).then(config => {
 });
 console.log(BACKEND_URL);
 
+const sidebar = document.getElementById('sidebar');
+const sidebarContent = document.getElementById('sidebar-content');
+
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-btn');
+
+    toggleBtn.addEventListener('click', function () {
+        sidebar.classList.toggle('collapsed');
+        updateSidebarItemsVisibility();
+    });
+});
+
 function startTask() {
-    fetch(`${BACKEND_URL}/api/enqueue`, {
+    fetch(`${BACKEND_URL}/api/v1/submit`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ input: `${document.getElementById('inputParam').value}` })
+        body: JSON.stringify({ prompt: `${document.getElementById('inputParam').value}`, task_type: 'generate' })
     })
     .then(res => res.json())
     .then(data => {
@@ -39,19 +51,62 @@ function addTaskToUI(taskId) {
             </button>
         </div>`;
 
+    addSidebarItem()
     const container = document.getElementById('tasks');
     container.insertBefore(taskDiv, container.firstChild);
- 
+
     const divider = document.getElementById('taskDivider');
     if (container.children.length === 1) {
         divider.classList.add('show');
     }
- 
+
     requestAnimationFrame(() => {
         taskDiv.classList.add('animate');
     });
 }
 
+function addSidebarItem(text, taskId) {
+    const item = document.createElement('div');
+    item.className = 'sidebar-item';
+    item.dataset.fullText = text;
+    item.dataset.itemNumber = taskId;
+
+    const numberSpan = document.createElement('span');
+    numberSpan.className = 'item-number';
+    numberSpan.textContent = taskId;
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'sidebar-text';
+    textSpan.textContent = text.length > 20 ? text.substring(0, 20) + '...' : text;
+
+    item.appendChild(numberSpan);
+    item.appendChild(textSpan);
+
+    item.addEventListener('click', function() {
+        alert('Вы выбрали: ' + text);
+    });
+
+    sidebarContent.appendChild(item);
+    updateSidebarItemsVisibility();
+}
+
+function updateSidebarItemsVisibility() {
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    const items = document.querySelectorAll('.sidebar-item');
+
+    items.forEach(item => {
+        const number = item.querySelector('.item-number');
+        const text = item.querySelector('.sidebar-text');
+
+        if (isCollapsed) {
+            number.style.display = 'block';
+            text.style.display = 'none';
+        } else {
+            number.style.display = 'none';
+            text.style.display = 'block';
+        }
+    });
+}
 
 function updateStatus(taskId, status, result = '') {
     const el = document.getElementById(`task-${taskId}`);
@@ -60,12 +115,10 @@ function updateStatus(taskId, status, result = '') {
         const resultEl = document.getElementById(`result-${taskId}`);
         const toggleBtnContainer = el.querySelector('.toggle-container');
         const loadingGif = statusEl.querySelector('.loading-gif');
- 
-        // Обновляем статус
+
         statusEl.textContent = `Статус: ${status}`;
-        statusEl.className = 'status'; // Сбрасываем классы
-        
-        // Добавляем гиф-картинку обратно, если статус "ожидание"
+        statusEl.className = 'status';
+
         if (status === 'ожидание') {
             statusEl.classList.add('status-waiting');
             if (!loadingGif) {
@@ -81,30 +134,24 @@ function updateStatus(taskId, status, result = '') {
             statusEl.classList.add('status-error');
         }
 
-
         const icon = document.querySelector(`#btn-${taskId} .icon`);
 
         if (result) {
             try {
-                const parsedResult = JSON.parse(`${result}`);
-                resultEl.textContent = parsedResult;
+                resultEl.textContent = JSON.parse(`${result}`);
             } catch (e) {
                 resultEl.textContent = result;
             }
 
-            // Показываем результат с анимацией
             resultEl.classList.add('show');
-            icon.textContent = '−'; // минус
+            icon.textContent = '−';
 
-            // Показываем кнопку, если она была скрыта
             toggleBtnContainer.style.display = 'block';
         } else {
-            // Скрываем результат
             resultEl.classList.remove('show');
             resultEl.textContent = '';
-            icon.textContent = '+'; // плюс
+            icon.textContent = '+';
 
-            // Скрываем кнопку, если нужно
             toggleBtnContainer.style.display = 'none';
         }
     }
@@ -117,33 +164,30 @@ function toggleResult(taskId) {
     if (!resultEl) return;
 
     if (resultEl.classList.contains('show')) {
-        // Анимация скрытия
         resultEl.classList.remove('show');
 
-        // После завершения анимации можно скрыть полностью (по желанию)
-        setTimeout(() => {
-            // Можно оставить display: block, чтобы не терять позиционирование
-        }, 300);
+        setTimeout(() => {}, 300);
 
-        icon.textContent = '+'; // Плюс
+        icon.textContent = '+';
     } else {
-        // Анимация появления
         resultEl.classList.add('show');
-        icon.textContent = '−'; // Минус
+        icon.textContent = '−';
     }
 }
 
 function subscribeToTask(taskId) {
-    const eventSource = new EventSource(`${BACKEND_URL}/api/subscribe/${taskId}`);
+    const eventSource = new EventSource(`${BACKEND_URL}/api/v1/stream/${taskId}`);
     eventSource.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
-            if (data.status === 'done') {
+            console.log(data)
+            if (data.status === 'completed') {
                 updateStatus(taskId, 'выполнено', data.result);
+                eventSource.close();
             } else if (data.status === 'failed') {
                 updateStatus(taskId, 'ошибка', data.error);
+                eventSource.close();
             }
-            eventSource.close();
         } catch (e) {
             console.error("Ошибка парсинга:", e);
         }
@@ -155,21 +199,19 @@ function subscribeToTask(taskId) {
     };
 }
 
-function removeTask(taskId) {
-    const taskEl = document.getElementById(`task-${taskId}`);
-    if (taskEl) {
-        taskEl.remove();
-    }
+// function removeTask(taskId) {
+//     const taskEl = document.getElementById(`task-${taskId}`);
+//     if (taskEl) {
+//         taskEl.remove();
+//     }
+//
+//     const tasksContainer = document.getElementById('tasks');
+//     const divider = document.getElementById('taskDivider');
+//     if (tasksContainer.children.length === 0) {
+//         divider.style.display = 'none';
+//     }
+// }
 
-    // Если задач больше нет — скрываем разделитель
-    const tasksContainer = document.getElementById('tasks');
-    const divider = document.getElementById('taskDivider');
-    if (tasksContainer.children.length === 0) {
-        divider.style.display = 'none';
-    }
-}
-
-// Функция для получения данных категории
 function fetchCategory(category) {
     fetch(`$BACKEND_URL/api/category?name=${category}`)
         .then(response => response.json())
@@ -177,36 +219,35 @@ function fetchCategory(category) {
             alert(`Категория: ${data.name}\nКоличество статей: ${data.count}`);
         })
         .catch(error => {
-            alert('Произошла ошибка при загрузке категории');
+            alert(`Произошла ошибка при загрузке категории: ${error}`);
         });
 }
 
-// Функция для взаимодействия с бэкендом
-function fetchData() {
-    const param = document.getElementById('inputParam').value;
-    const responseDiv = document.getElementById('backendResponse');
-
-    responseDiv.textContent = "Отправка запроса...";
-
-    fetch(`$BACKEND_URL/api/data?param=${encodeURIComponent(param)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Ошибка сети');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                responseDiv.textContent = `Ошибка: ${data.error}`;
-            } else {
-                responseDiv.textContent = `Ответ от Gigachat: ${data.response}`;
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            responseDiv.textContent = `Произошла ошибка: ${error.message}`;
-        });
-}
+// function fetchData() {
+//     const param = document.getElementById('inputParam').value;
+//     const responseDiv = document.getElementById('backendResponse');
+//
+//     responseDiv.textContent = "Отправка запроса...";
+//
+//     fetch(`$BACKEND_URL/api/data?param=${encodeURIComponent(param)}`)
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error('Ошибка сети');
+//             }
+//             return response.json();
+//         })
+//         .then(data => {
+//             if (data.error) {
+//                 responseDiv.textContent = `Ошибка: ${data.error}`;
+//             } else {
+//                 responseDiv.textContent = `Ответ от Gigachat: ${data.response}`;
+//             }
+//         })
+//         .catch(error => {
+//             console.error('Ошибка:', error);
+//             responseDiv.textContent = `Произошла ошибка: ${error.message}`;
+//         });
+// }
 
 function preventDefaults(e) {
     e.preventDefault();
@@ -238,7 +279,6 @@ function handleFiles(files) {
         fileList.appendChild(li);
     });
 
-    // Автоматически начинаем загрузку после выбора файлов
     uploadFiles();
 }
 
@@ -301,7 +341,7 @@ inputParam.addEventListener('focus', function() {
     if (this.value === '' && this.placeholder === 'Что вас интересует?') {
         this.placeholder = '';
     }
-});s
+});
 
 inputParam.addEventListener('blur', function() {
     if (this.value === '') {
@@ -313,7 +353,7 @@ inputParam.addEventListener('blur', function() {
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const themeIcon = document.getElementById('theme-icon');
-    
+
     if (currentTheme === 'dark') {
         document.documentElement.removeAttribute('data-theme');
         themeIcon.textContent = '🌙';
@@ -329,7 +369,7 @@ function toggleTheme() {
 document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     const themeIcon = document.getElementById('theme-icon');
-    
+
     if (savedTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
         themeIcon.textContent = '??';
@@ -366,4 +406,3 @@ fileInput.addEventListener('change', function() {
 });
 
 dropZone.addEventListener('drop', handleDrop, false);
-
