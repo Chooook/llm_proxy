@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
+    BACKEND_HOST: str = 'localhost'
+    BACKEND_PORT: int
     REDIS_DB: int = 0
     MODEL_PATH: str
 

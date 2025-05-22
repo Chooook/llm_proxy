@@ -16,4 +16,5 @@ members = [
     "backend",
     "search",
     "llm_worker",
+    "frontend",
 ]
