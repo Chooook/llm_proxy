@@ -41,7 +41,7 @@ def run_llm_inference(prompt: str) -> str:
     try:
         output = llm.create_chat_completion(
             messages=[system_message, user_message],
-            max_tokens=150,
+            max_tokens=512,
         )
         response = output['choices'][0]['message']['content'].strip()
         return response
