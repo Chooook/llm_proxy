@@ -8,4 +8,4 @@ class TaskType(str, Enum):
 
 class TaskCreate(BaseModel):
     prompt: str
-    task_type: TaskType
+    task_type: TaskType = TaskType.GENERATE
