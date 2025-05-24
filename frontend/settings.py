@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     LOGLEVEL: str = 'DEBUG'
     DEBUG: bool = True
-    HOST: str = '0.0.0.0'
+    HOST: str = '127.0.0.1'
     BACKEND_PORT: int = 8000
     FRONTEND_PORT: int = 5000
 
