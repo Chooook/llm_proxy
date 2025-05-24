@@ -1,6 +1,5 @@
-backend: cd backend && uvicorn main:app --reload --host $BACKEND_HOST --port 8000
+backend: cd backend && uvicorn main:app --reload --host $HOST --port $BACKEND_PORT
 llm_worker: cd llm_worker && python main.py
+frontend: cd frontend && gunicorn -w 1 --worker-class gevent -b $HOST:$FRONTEND_PORT app:app
 
-# `honcho start -e .env` если нужна информация из .env
-# CRON:
-# @reboot cd /home/user/project && honcho start >> app.log 2>&1
+# @reboot cd /home/user/project && load_env_and_run.sh >> app.log 2>&1
