@@ -54,8 +54,10 @@ async def process_task(task_id: str):
     task = json.loads(task_data)
     prompt = task['prompt']
     logger.info(f'🔄 Начинаем обработку задачи {task_id}')
+    logger.debug(f'🧠 Промпт: {prompt}')
 
     result = run_llm_inference(prompt)
+    logger.debug(f'🧠 Результат: {result}')
 
     task['status'] = 'completed'
     task['result'] = result
