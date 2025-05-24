@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
-
 from flask import Flask, jsonify, render_template
-
-sys.path.append(str(Path(__file__).parent.parent))
 
 from settings import settings
 

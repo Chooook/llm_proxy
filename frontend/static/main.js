@@ -33,7 +33,7 @@ function startTask() {
     const questionText = inputText.value;
     document.getElementById('inputParam').value = '';
     autoResize(inputText);
-    fetch(`${BACKEND_URL}/api/v1/submit`, {
+    fetch(`${BACKEND_URL}/api/v1/enqueue`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ prompt: `${document.getElementById('inputParam').value}`})
@@ -196,7 +196,7 @@ function toggleResult(taskId) {
 }
 
 function subscribeToTask(taskId) {
-    const eventSource = new EventSource(`${BACKEND_URL}/api/v1/stream/${taskId}`);
+    const eventSource = new EventSource(`${BACKEND_URL}/api/v1/subscribe/${taskId}`);
     eventSource.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
@@ -237,7 +237,7 @@ function handleFeedback(taskId, type, button) {
 
     // При желании можно отправить feedback на бэкенд:
    /*
-    fetch(`${BACKEND_URL}/api/feedback`, {
+    fetch(`${BACKEND_URL}/api/v1/feedback/${taskId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, feedback: type })
