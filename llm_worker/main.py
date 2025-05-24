@@ -1,7 +1,5 @@
 import asyncio
 import json
-import sys
-from pathlib import Path
 
 from llama_cpp import Llama
 from llama_cpp import (
@@ -11,9 +9,6 @@ from llama_cpp import (
 from loguru import logger
 
 from core.redis import redis_client
-
-sys.path.append(str(Path(__file__).parent))
-
 from settings import settings
 
 logger.add('worker.log', level=settings.LOGLEVEL, rotation='10 MB')
