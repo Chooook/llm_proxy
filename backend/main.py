@@ -1,10 +1,5 @@
-import sys
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-sys.path.append(str(Path(__file__).parent.parent))
 
 from settings import settings
 from api.v1.router import router as v1_router

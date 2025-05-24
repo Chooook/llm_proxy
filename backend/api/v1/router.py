@@ -11,7 +11,7 @@ from schemas.task import TaskCreate
 router = APIRouter(prefix='/api/v1')
 
 
-@router.post('/submit')
+@router.post('/enqueue')
 async def submit_task(task: TaskCreate):
     task_id = str(uuid.uuid4())
     redis_client.setex(f'task:{task_id}', 3600, json.dumps({
@@ -22,7 +22,8 @@ async def submit_task(task: TaskCreate):
     redis_client.rpush('task_queue', task_id)
     return {'task_id': task_id}
 
-@router.get('/stream/{task_id}')
+
+@router.get('/subscribe/{task_id}')
 async def stream_status(task_id: str):
     async def event_generator():
         last_status = ''
