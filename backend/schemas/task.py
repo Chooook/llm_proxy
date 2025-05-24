@@ -9,4 +9,6 @@ class TaskType(str, Enum):
 
 class TaskCreate(BaseModel):
     prompt: str
+    # TODO: replace with real user id when authentication is implemented:
+    user_id: str = 'localuser'
     task_type: TaskType = TaskType.GENERATE
