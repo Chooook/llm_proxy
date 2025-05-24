@@ -56,7 +56,7 @@ function addTaskToUI(taskId, questionText) {
         </div>
         <div class="status status-waiting">
             Статус: ожидание
-            <img src="/static/loading.gif" class="loading-gif" alt="Загрузка...">
+            <img src="/static/loading_dog.gif" class="loading-gif" alt="Загрузка...">
         </div>
         <div class="result" id="result-${taskId}"></div>
         <div class="toggle-container">
@@ -136,7 +136,7 @@ function updateStatus(taskId, status, result = '') {
             statusEl.classList.add('status-waiting');
             if (!loadingGif) {
                 const gif = document.createElement('img');
-                gif.src = '/static/loading.gif';
+                gif.src = '/static/loading_dog.gif';
                 gif.className = 'loading-gif';
                 gif.alt = 'Загрузка...';
                 statusEl.appendChild(gif);
