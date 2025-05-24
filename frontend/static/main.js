@@ -29,11 +29,14 @@ textarea.addEventListener(
 );
 
 function startTask() {
-    const questionText = document.getElementById('inputParam').value;
-    fetch(`${BACKEND_URL}/api/enqueue`, {
+    const inputText = document.getElementById('inputParam');
+    const questionText = inputText.value;
+    document.getElementById('inputParam').value = '';
+    autoResize(inputText);
+    fetch(`${BACKEND_URL}/api/v1/submit`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ input: `${document.getElementById('inputParam').value}` })
+        body: JSON.stringify({ prompt: `${document.getElementById('inputParam').value}`})
     })
     .then(res => res.json())
     .then(data => {
@@ -49,9 +52,8 @@ function addTaskToUI(taskId, questionText) {
     taskDiv.id = `task-${taskId}`;
     taskDiv.innerHTML = `
         <div class="task-header">
-            <span class="task-title">Вопрос: </span>
+            <span class="task-title">Вопрос: ${questionText}</span>
         </div>
-        <div class="question-text">Вопрос: ${questionText}</div>
         <div class="status status-waiting">
             Статус: ожидание
             <img src="/static/loading.gif" class="loading-gif" alt="Загрузка...">
@@ -162,13 +164,13 @@ function updateStatus(taskId, status, result = '') {
             }
 
             resultEl.classList.add('show');
-            icon.textContent = '−';
+            icon.textContent = '▲';
 
             toggleBtnContainer.style.display = 'block';
         } else {
             resultEl.classList.remove('show');
             resultEl.textContent = '';
-            icon.textContent = '+';
+            icon.textContent = '▼';
 
             toggleBtnContainer.style.display = 'none';
         }
@@ -186,19 +188,19 @@ function toggleResult(taskId) {
 
         setTimeout(() => {}, 300);
 
-        icon.textContent = '+';
+        icon.textContent = '▼';
     } else {
         resultEl.classList.add('show');
-        icon.textContent = '−';
+        icon.textContent = '▲';
     }
 }
 
 function subscribeToTask(taskId) {
-    const eventSource = new EventSource(`${BACKEND_URL}/api/subscribe/${taskId}`);
+    const eventSource = new EventSource(`${BACKEND_URL}/api/v1/stream/${taskId}`);
     eventSource.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
-            if (data.status === 'done') {
+            if (data.status === 'completed') {
                 updateStatus(taskId, 'выполнено', data.result);
                 eventSource.close();
             } else if (data.status === 'failed') {
@@ -214,30 +216,6 @@ function subscribeToTask(taskId) {
         console.error("Ошибка SSE для задачи", taskId, err);
         eventSource.close();
     };
-}
-
-// function removeTask(taskId) {
-//     const taskEl = document.getElementById(`task-${taskId}`);
-//     if (taskEl) {
-//         taskEl.remove();
-//     }
-//
-//     const tasksContainer = document.getElementById('tasks');
-//     const divider = document.getElementById('taskDivider');
-//     if (tasksContainer.children.length === 0) {
-//         divider.style.display = 'none';
-//     }
-// }
-
-function fetchCategory(category) {
-    fetch(`$BACKEND_URL/api/category?name=${category}`)
-        .then(response => response.json())
-        .then(data => {
-            alert(`Категория: ${data.name}\nКоличество статей: ${data.count}`);
-        })
-        .catch(error => {
-            alert(`Произошла ошибка при загрузке категории: ${error}`);
-        });
 }
 
 function toggleTheme() {
@@ -281,7 +259,19 @@ function copyToClipboard(taskId, button) {
         });
 }
 
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    const maxHeight = 300;
+    const scrollHeight = textarea.scrollHeight;
 
+    if (scrollHeight > maxHeight) {
+        textarea.style.height = maxHeight + 'px';
+        textarea.style.overflowY = 'auto';
+    } else {
+        textarea.style.height = scrollHeight + 'px';
+        textarea.style.overflowY = 'hidden';
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme') || 'light';

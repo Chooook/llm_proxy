@@ -34,7 +34,10 @@
             <div class="backend-demo">
                 <h1>Поиск по базе знаний</h1>
                 <div class="search-wrapper">
-                    <textarea id="inputParam" placeholder="Что вас интересует?" autofocus></textarea>
+                    <div class="textarea-wrapper">
+                        <textarea id="inputParam" placeholder="Что вас интересует?" autofocus
+                                  oninput="autoResize(this)"></textarea>
+                    </div>
                     <button class="backend-btn" onclick="startTask()">🔍️</button>
                 </div>
                 <div class="divider" id="taskDivider"></div>
@@ -53,24 +56,6 @@
                 <div class="category-icon">💡️</div>
                 <h3 class="category-title">Частые вопросы</h3>
                 <p class="category-desc">Ответы на наиболее популярные вопросы пользователей</p>
-            </div>
-
-            <div class="category-card" onclick="fetchCategory('solutions')">
-                <div class="category-icon">🛠️️</div>
-                <h3 class="category-title">Решения проблем</h3>
-                <p class="category-desc">Пошаговые инструкции по устранению типовых проблем</p>
-            </div>
-
-            <div class="category-card" onclick="fetchCategory('analytics')">
-                <div class="category-icon">📊️</div>
-                <h3 class="category-title">Аналитика</h3>
-                <p class="category-desc">Отчеты, исследования и аналитические материалы</p>
-           </div>
-
-            <div class="category-card" onclick="fetchCategory('education')">
-                <div class="category-icon">🎓️</div>
-                <h3 class="category-title">Обучение</h3>
-                <p class="category-desc">Обучающие материалы, курсы и руководства</p>
             </div>
 
             <div class="category-card" onclick="fetchCategory('add_article')">
