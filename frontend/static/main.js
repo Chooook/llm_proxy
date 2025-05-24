@@ -36,7 +36,7 @@ function startTask() {
     fetch(`${BACKEND_URL}/api/v1/enqueue`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ prompt: `${document.getElementById('inputParam').value}`})
+        body: JSON.stringify({ prompt: `${questionText}`})
     })
     .then(res => res.json())
     .then(data => {
