@@ -2,7 +2,7 @@ from flask import Flask, jsonify, render_template
 
 from settings import settings
 
-BACKEND_URL = f'http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}'
+BACKEND_URL = f'http://{settings.HOST}:{settings.BACKEND_PORT}'
 
 app = Flask(__name__)
 
