@@ -1,14 +1,14 @@
 import asyncio
 import json
 
-from llama_cpp import Llama
+import aioredis
 from llama_cpp import (
     ChatCompletionRequestSystemMessage,
     ChatCompletionRequestUserMessage,
 )
+from llama_cpp import Llama
 from loguru import logger
 
-from core.redis import redis_client
 from settings import settings
 
 logger.add('worker.log', level=settings.LOGLEVEL, rotation='10 MB')
@@ -45,8 +45,8 @@ def run_llm_inference(prompt: str) -> str:
         return f'[Ошибка] {str(e)}'
 
 
-async def process_task(task_id: str):
-    task_data = redis_client.get(f'task:{task_id}')
+async def process_task(task_id: str, redis_client: aioredis.Redis):
+    task_data = await redis_client.get(f'task:{task_id}')
     if not task_data:
         logger.warning(f'⚠️ Задача {task_id} не найдена')
         return
@@ -56,26 +56,38 @@ async def process_task(task_id: str):
     logger.info(f'🔄 Начинаем обработку задачи {task_id}')
     logger.debug(f'🧠 Промпт: {prompt}')
 
-    result = run_llm_inference(prompt)
+    # Выносим синхронный вызов LLM в отдельный поток
+    result = await asyncio.to_thread(run_llm_inference, prompt)
     logger.debug(f'🧠 Результат: {result}')
 
     task['status'] = 'completed'
     task['result'] = result
-    redis_client.setex(f'task:{task_id}', 86400, json.dumps(task))
+    await redis_client.setex(f'task:{task_id}', 86400, json.dumps(task))
     logger.info(f'✅ Задача {task_id} выполнена')
 
 
-async def worker_loop():
+async def worker_loop(redis_client: aioredis.Redis):
     logger.info('👂 Worker запущен. Ожидание задач...')
     while True:
         try:
-            _, task_id = redis_client.blpop('task_queue', timeout=0)
-            task_id = task_id.decode()
+            _, task_id = await redis_client.blpop('task_queue', timeout=0)
             logger.info(f'📥 Получена задача: {task_id}')
-            await process_task(task_id)
+            await process_task(task_id, redis_client)
         except Exception as e:
-            logger.error(f'⚠️ Ошибка в основном цикле: {e}')
+            logger.error(f'⚠️ Ошибка в worker: {e}')
             await asyncio.sleep(5)
 
+
+async def main():
+    redis_client = aioredis.Redis.from_url(
+        f'redis://{settings.HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}',
+        decode_responses=True
+    )
+    try:
+        await worker_loop(redis_client)
+    finally:
+        await redis_client.close()
+
+
 if __name__ == '__main__':
-    asyncio.run(worker_loop())
+    asyncio.run(main())
