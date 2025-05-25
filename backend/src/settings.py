@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
 
     class Config:
-        env_file = '.env'
+        env_file = '../.env'
         env_file_encoding = 'utf-8'
         case_sensitive = True
 
