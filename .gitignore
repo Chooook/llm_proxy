@@ -7,3 +7,4 @@ celerybeat.pid
 .mypy_cache/
 .idea/
 llm_worker/models
+*.log
