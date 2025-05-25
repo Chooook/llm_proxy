@@ -142,17 +142,48 @@ async def process_task(task_id: str, redis: aioredis.Redis):
         await handler(task_id, redis)
     except Exception as e:
         logger.error(f"Ошибка обработки задачи {task_id}: {str(e)}")
+        retries = await redis.hincrby(f'task:{task_id}', 'retries', 1)
+        if retries > 3:
+            await redis.rpush('dead_letters', task_id)
+            await redis.lrem('processing_queue', 1, task_id)
+            await mark_task_failed(redis, task_id, "Превышено число попыток")
+        else:
+            await redis.rpush('task_queue', task_id)
 
-async def worker_loop(redis_client: aioredis.Redis):
-    logger.info('👂 Worker запущен. Ожидание задач...')
+
+async def worker_loop(redis: aioredis.Redis):
+    await recover_tasks(redis)
+
     while True:
         try:
-            _, task_id = await redis_client.blpop('task_queue', timeout=0)
+            task_id = await redis.brpoplpush(
+                'task_queue',
+                'processing_queue',
+                timeout=0
+            )
             logger.info(f'📥 Получена задача: {task_id}')
-            await process_task(task_id, redis_client)
+
+            try:
+                await process_task(task_id, redis)
+                await redis.lrem('processing_queue', 1, task_id)
+            except Exception as e:
+                logger.error(f"Ошибка обработки {task_id}: {e}")
+                await redis.rpush('task_queue', task_id)
+                await redis.lrem('processing_queue', 1, task_id)
+
         except Exception as e:
             logger.error(f'⚠️ Ошибка в worker: {e}')
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
+
+
+async def recover_tasks(redis: aioredis.Redis):
+    logger.info("🔍 Восстановление незавершенных задач...")
+    while True:
+        task_id = await redis.rpop('processing_queue')
+        if not task_id:
+            break
+        await redis.rpush('task_queue', task_id)
+        logger.info(f"♻️ Восстановлена задача: {task_id}")
 
 
 async def mark_task_failed(
