@@ -15,11 +15,11 @@ router = APIRouter(prefix='/api/v1')
 
 @router.post('/enqueue')
 async def submit_task(request: Request, task: TaskCreate):
-    redis_client: Redis = request.app.state.redis
+    redis: Redis = request.app.state.redis
     task_id = str(uuid.uuid4())
     short_id = generate_short_id(task_id, task.user_id)
 
-    await redis_client.setex(
+    await redis.setex(
         f'task:{task_id}',
         3600,
         json.dumps({
@@ -30,18 +30,21 @@ async def submit_task(request: Request, task: TaskCreate):
             'short_task_id': short_id
         })
     )
-    await redis_client.rpush('task_queue', task_id)
+    await redis.rpush('task_queue', task_id)
     return JSONResponse({'task_id': task_id, 'short_id': short_id})
 
 
 @router.get('/subscribe/{task_id}')
 async def stream_status(request: Request, task_id: str):
-    redis_client: Redis = request.app.state.redis
+    redis: Redis = request.app.state.redis
     async def event_generator():
         last_status = ''
         while True:
-            raw_task = await redis_client.get(f'task:{task_id}')
+            raw_task = await redis.get(f'task:{task_id}')
             if not raw_task:
+                in_dead_letters = await redis.lpos("dead_letters", task_id)
+                if in_dead_letters is not None:
+                    yield json.dumps(in_dead_letters)
                 break
             task = json.loads(raw_task)
             if task['status'] != last_status:
@@ -55,11 +58,11 @@ async def stream_status(request: Request, task_id: str):
 
 @router.get('/tasks')
 async def list_tasks(request: Request):
-    redis_client: Redis = request.app.state.redis
-    task_ids = await redis_client.lrange('task_queue', 0, -1)
+    redis: Redis = request.app.state.redis
+    task_ids = await redis.lrange('task_queue', 0, -1)
     tasks = []
     for task_id in task_ids:
-        task = json.loads(await redis_client.get(f'task:{task_id}'))
+        task = json.loads(await redis.get(f'task:{task_id}'))
         tasks.append({
             'task_id': task_id,
             'status': task['status'],
