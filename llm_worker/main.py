@@ -27,6 +27,7 @@ async def main():
         f'redis://{settings.HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}',
         decode_responses=True
     )
+    asyncio.create_task(cleanup_dlq(redis))
     try:
         await worker_loop(redis)
     finally:
@@ -195,6 +196,17 @@ async def mark_task_failed(
         task['error'] = error_msg
         await redis.setex(f'task:{task_id}', 86400, json.dumps(task))
 
+
+async def cleanup_dlq(redis: aioredis.Redis):
+    while True:
+        logger.info("🧹 Очистка dead_letters...")
+        dlq_length = await redis.llen('dead_letters')
+        if dlq_length > 50:
+            tasks = await redis.lrange('dead_letters', 0, -1)
+            for task_id in tasks:
+                await redis.delete(f'task:{task_id}')
+            await redis.delete('dead_letters')
+        await asyncio.sleep(3600)
 
 
 if __name__ == '__main__':
