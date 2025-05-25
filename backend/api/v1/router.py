@@ -57,7 +57,7 @@ async def stream_status(request: Request, task_id: str):
 
 
 @router.get('/tasks')
-async def list_tasks(request: Request):
+async def list_queued_tasks(request: Request):
     redis: Redis = request.app.state.redis
     task_ids = await redis.lrange('task_queue', 0, -1)
     tasks = []
@@ -71,4 +71,22 @@ async def list_tasks(request: Request):
             'user_id': task['user_id'],
             'short_task_id': task['short_task_id']
         })
-    return tasks
+    return JSONResponse(tasks)
+
+@router.get('/tasks/{user_id}')
+async def list_queued_tasks_by_user(request: Request, user_id: str):
+    redis: Redis = request.app.state.redis
+    task_ids = await redis.lrange('task_queue', 0, -1)
+    tasks = []
+    for task_id in task_ids:
+        task = json.loads(await redis.get(f'task:{task_id}'))
+        if task['user_id'] == user_id:
+            tasks.append({
+                'task_id': task_id,
+                'status': task['status'],
+                'prompt': task['prompt'],
+                'type': task['type'],
+                'user_id': task['user_id'],
+                'short_task_id': task['short_task_id']
+                })
+    return JSONResponse(tasks)
