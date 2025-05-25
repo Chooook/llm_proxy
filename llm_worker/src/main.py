@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from typing import Dict, Callable, Awaitable
 
 import aioredis
@@ -38,11 +39,17 @@ def register_handlers():
     """Регистрирует доступные обработчики задач"""
     try:
         import llama_cpp
+        if not os.path.exists(settings.MODEL_PATH):
+            raise FileNotFoundError
         task_handlers['generate_local'] = _handle_generate_local_task
         logger.info("✅ LLM обработчик зарегистрирован")
     except ImportError:
         logger.warning(
             "⚠️ LLM обработчик недоступен: зависимости не установлены")
+    except FileNotFoundError:
+        logger.warning(
+            "⚠️ LLM обработчик недоступен: модель не найдена по пути: "
+            f"{settings.MODEL_PATH}")
 
 
 async def _handle_generate_local_task(task_id: str, redis: aioredis.Redis):
@@ -169,8 +176,8 @@ async def worker_loop(redis: aioredis.Redis):
                 await redis.lrem('processing_queue', 1, task_id)
             except Exception as e:
                 logger.error(f"Ошибка обработки {task_id}: {e}")
-                await redis.rpush('task_queue', task_id)
                 await redis.lrem('processing_queue', 1, task_id)
+                await redis.rpush('task_queue', task_id)
 
         except Exception as e:
             logger.error(f'⚠️ Ошибка в worker: {e}')
