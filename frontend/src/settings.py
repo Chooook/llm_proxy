@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int = 5000
 
     class Config:
-        env_file = '.env'
+        env_file = '../.env'
         env_file_encoding = 'utf-8'
         case_sensitive = True
 
