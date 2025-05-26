@@ -26,6 +26,7 @@ async def mark_task_failed(redis: Redis, task_id: str, error_msg: str):
 
 async def cleanup_dlq(redis: Redis):
     while True:
+        await asyncio.sleep(3600)
         logger.info("🧹 Очистка dead_letters...")
         dlq_length = await redis.llen('dead_letters')
         if dlq_length > 50:
