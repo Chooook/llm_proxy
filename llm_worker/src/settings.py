@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     MODEL_PATH: str
+    GP_HOST: str
+    GP_PORT: int
+    GP_DATABASE: str
+    GP_SCHEMA: str
 
     class Config:
         env_file = '../.env'

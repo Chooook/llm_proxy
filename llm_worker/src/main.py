@@ -43,10 +43,8 @@ async def worker_loop(redis: aioredis.Redis):
             try:
                 await process_task(task_id, redis)
                 await redis.lrem('processing_queue', 1, task_id)
-            except Exception as e:
-                logger.error(f"Ошибка обработки {task_id}: {e}")
-                await redis.lrem('processing_queue', 1, task_id)
-                await redis.rpush('task_queue', task_id)
+            except Exception:
+                pass
 
         except Exception as e:
             logger.error(f'⚠️ Ошибка в worker: {e}')
@@ -69,21 +67,25 @@ async def process_task(task_id: str, redis: aioredis.Redis):
             task_id,
             f"Неподдерживаемый тип задачи: {task['type']}"
         )
+        logger.warning(f'⚠️ Задача {task_id} не выполнена, тип '
+                       f'задачи {task["type"]} не поддерживается')
         return
 
     try:
         await handler(task_id, redis)
     except Exception as e:
-        logger.error(f"Ошибка обработки задачи {task_id}: {str(e)}")
+        logger.error(f"⚠️ Ошибка обработки задачи {task_id}: {str(e)}")
         retries = await redis.hincrby(f'task:{task_id}', 'retries', 1)
-        if retries > 3:
+        if retries > 2:
             await redis.rpush('dead_letters', task_id)
             await redis.lrem('processing_queue', 1, task_id)
             await mark_task_failed(redis, task_id, "Превышено число попыток")
         else:
+            await redis.lrem('processing_queue', 1, task_id)
             await redis.rpush('task_queue', task_id)
+        raise
 
 
 if __name__ == '__main__':
-    task_handlers = register_handlers()
+    task_handlers = asyncio.run(register_handlers())
     asyncio.run(main())
