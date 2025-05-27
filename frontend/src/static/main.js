@@ -4,6 +4,50 @@ fetch('/config').then(res => res.json()).then(config => {
     BACKEND_URL = config.BACKEND_URL;
 });
 
+async function autoLogin() {
+  try {
+    const response = await fetch('BACKEND_URL/', {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      console.log('Автоматический вход выполнен');
+    } else {
+      console.error('Ошибка авто-логина');
+    }
+  } catch (err) {
+    console.error('Ошибка сети:', err);
+  }
+}
+
+await autoLogin();
+
+function getTasks() {
+  return fetch(`${BACKEND_URL}/api/v1/tasks`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Ошибка сети при получении задач');
+      }
+      return response.json();
+    })
+    .catch(error => {
+      console.error('Не удалось получить задачи:', error);
+      return [];
+    });
+}
+
+let tasks;
+
+getTasks().then(userTasks => {
+  tasks = userTasks;
+  console.log('Задачи загружены:', userTasks);
+});
+
+
 const sidebar = document.getElementById('sidebar');
 const sidebarContent = document.getElementById('sidebar-content');
 
@@ -34,6 +78,7 @@ function startTask() {
     document.getElementById('inputParam').value = '';
     autoResize(inputText);
     fetch(`${BACKEND_URL}/api/v1/enqueue`, {
+        credentials: 'include',
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ prompt: `${questionText}`})
