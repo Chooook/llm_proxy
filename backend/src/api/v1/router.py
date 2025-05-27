@@ -14,7 +14,7 @@ router = APIRouter(prefix='/api/v1')
 
 
 @router.post('/enqueue')
-async def submit_task(request: Request, task: TaskCreate):
+async def enqueue_task(request: Request, task: TaskCreate):
     redis: Redis = request.app.state.redis
     task_id = str(uuid.uuid4())
     short_id = generate_short_id(task_id, task.user_id)
@@ -24,7 +24,7 @@ async def submit_task(request: Request, task: TaskCreate):
         3600,
         json.dumps({
             'status': 'queued',
-            'prompt': task.prompt,
+            'prompt': task.prompt.strip(),
             'type': task.task_type,
             'user_id': task.user_id,
             'short_task_id': short_id
@@ -35,7 +35,7 @@ async def submit_task(request: Request, task: TaskCreate):
 
 
 @router.get('/subscribe/{task_id}')
-async def stream_status(request: Request, task_id: str):
+async def subscribe_stream_status(request: Request, task_id: str):
     redis: Redis = request.app.state.redis
     async def event_generator():
         last_status = ''
