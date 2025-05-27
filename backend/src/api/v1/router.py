@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
+from utils.auth_utils import get_current_user
 from utils.task_short_id import generate_short_id
 from schemas.task import TaskCreate
 
@@ -16,8 +17,9 @@ router = APIRouter(prefix='/api/v1')
 @router.post('/enqueue')
 async def enqueue_task(request: Request, task: TaskCreate):
     redis: Redis = request.app.state.redis
+    user_id = await get_current_user(request, redis)
     task_id = str(uuid.uuid4())
-    short_id = generate_short_id(task_id, task.user_id)
+    short_id = generate_short_id(task_id, user_id)
 
     await redis.setex(
         f'task:{task_id}',
@@ -26,7 +28,7 @@ async def enqueue_task(request: Request, task: TaskCreate):
             'status': 'queued',
             'prompt': task.prompt.strip(),
             'type': task.task_type,
-            'user_id': task.user_id,
+            'user_id': user_id,
             'short_task_id': short_id
         })
     )
@@ -56,28 +58,14 @@ async def subscribe_stream_status(request: Request, task_id: str):
     return EventSourceResponse(event_generator())
 
 
-@router.get('/tasks')
-async def list_queued_tasks(request: Request):
+@router.get('/tasks/')
+async def list_queued_tasks_by_user(request: Request):
     redis: Redis = request.app.state.redis
+    user_id = await get_current_user(request, redis)
+    tasks: list[dict] = []
+    if not user_id:
+        return JSONResponse(tasks)
     task_ids = await redis.lrange('task_queue', 0, -1)
-    tasks = []
-    for task_id in task_ids:
-        task = json.loads(await redis.get(f'task:{task_id}'))
-        tasks.append({
-            'task_id': task_id,
-            'status': task['status'],
-            'prompt': task['prompt'],
-            'type': task['type'],
-            'user_id': task['user_id'],
-            'short_task_id': task['short_task_id']
-        })
-    return JSONResponse(tasks)
-
-@router.get('/tasks/{user_id}')
-async def list_queued_tasks_by_user(request: Request, user_id: str):
-    redis: Redis = request.app.state.redis
-    task_ids = await redis.lrange('task_queue', 0, -1)
-    tasks = []
     for task_id in task_ids:
         task = json.loads(await redis.get(f'task:{task_id}'))
         if task['user_id'] == user_id:
@@ -85,6 +73,7 @@ async def list_queued_tasks_by_user(request: Request, user_id: str):
                 'task_id': task_id,
                 'status': task['status'],
                 'prompt': task['prompt'],
+                'result': task['result'] if task['result'] in task else '',
                 'type': task['type'],
                 'user_id': task['user_id'],
                 'short_task_id': task['short_task_id']

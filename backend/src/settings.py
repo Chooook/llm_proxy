@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     BACKEND_PORT: int = 8000
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    ACCESS_TOKEN_EXPIRE_DAYS: int = 90
+    JWT_ALGORITHM: str = 'HS256'
+    SECRET_KEY: str
 
     class Config:
         env_file = '../.env'
