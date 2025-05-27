@@ -26,17 +26,6 @@ async def run_query(query):
         return result
 
 
-# FIXME потенциально не нужно, при подтверждении удалить
-# async def keep_alive_pg(pg_conn):
-#     while True:
-#         logger.info("♻️ Keep-alive запрос выполнен")
-#         try:
-#             pg_conn.fetch('SELECT 1;')
-#         except Exception as e:
-#             logger.info(f"❗ Ошибка в keep-alive: {e}")
-#         await asyncio.sleep(1500)
-
-
 @asynccontextmanager
 async def get_pg_conn():
     global pool
@@ -57,8 +46,8 @@ async def __init_db():
     if pool is not None:
         return
     pool = await asyncpg.create_pool(
-        dsn='postgresql://{USERNAME}:{SAFE_PASSWORD}@{HOST}:{PORT}/'
-            '{DATABASE}?client_encoding=utf8',
+        dsn=f'postgresql://{USERNAME}:{SAFE_PASSWORD}@{HOST}:{PORT}/'
+            f'{DATABASE}?client_encoding=utf8',
         min_size=1,
         max_size=5,
         max_inactive_connection_lifetime=30
@@ -79,6 +68,7 @@ async def __close_db():
 
 
 def __check_kerberos_ticket():
+    # needs installed krb5 and asyncgp[gssauth]
     try:
         subprocess.run(['klist'], check=True)
     except subprocess.CalledProcessError:
