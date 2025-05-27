@@ -46,6 +46,7 @@ async def _handle_generate_gp_task(task_id: str, redis: Redis):
         if not result:
             raise RuntimeError(f"Ошибка обработки LLM через GP")
 
+        result = result.strip()
         logger.debug(f'🧠 Результат: {result}')
 
         task['status'] = 'completed'
