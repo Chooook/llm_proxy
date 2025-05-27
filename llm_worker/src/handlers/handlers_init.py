@@ -9,7 +9,7 @@ from handlers.generate_local_handler import _handle_generate_local_task
 from settings import settings
 
 
-async def register_handlers(
+async def register_handlers(redis: Redis
         ) -> Dict[str, Callable[[str, Redis], Awaitable[None]]]:
     """Регистрирует доступные обработчики задач"""
     task_handlers: Dict[str, Callable[[str, Redis], Awaitable[None]]] = {}
@@ -18,7 +18,7 @@ async def register_handlers(
         import llama_cpp
         if not os.path.exists(settings.MODEL_PATH):
             raise FileNotFoundError
-        await _handle_generate_local_task('test', None)
+        await _handle_generate_local_task('test prompt', redis)
         task_handlers['generate_local'] = _handle_generate_local_task
         logger.info("✅ Обработчик generate-local зарегистрирован")
     except ImportError:
@@ -35,7 +35,7 @@ async def register_handlers(
 
     try:
         import asyncpg
-        await _handle_generate_gp_task('test', None)
+        await _handle_generate_gp_task('test prompt', redis)
         task_handlers['generate_gp'] = _handle_generate_gp_task
         logger.info("✅ Обработчик generate_gp зарегистрирован")
     except ImportError:
