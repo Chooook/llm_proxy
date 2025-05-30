@@ -65,17 +65,29 @@ async def list_queued_tasks_by_user(request: Request):
     tasks: list[dict] = []
     if not user_id:
         return JSONResponse(tasks)
-    task_ids = await redis.lrange('task_queue', 0, -1)
-    for task_id in task_ids:
-        task = json.loads(await redis.get(f'task:{task_id}'))
-        if task['user_id'] == user_id:
-            tasks.append({
-                'task_id': task_id,
-                'status': task['status'],
-                'prompt': task['prompt'],
-                'result': task['result'] if task['result'] in task else '',
-                'type': task['type'],
-                'user_id': task['user_id'],
-                'short_task_id': task['short_task_id']
-                })
+    cursor = 0
+    while True:
+        cursor, keys = await redis.scan(cursor, match=f'task:*', count=100)
+        for task_id in keys:
+            try:
+                raw_task = json.loads(await redis.get(task_id))
+                if not raw_task:
+                    continue
+                task = json.loads(raw_task)
+                if not task:
+                    continue
+            except json.JSONDecodeError:
+                continue
+            if task['user_id'] == user_id:
+                tasks.append({
+                    'task_id': task_id,
+                    'status': task['status'],
+                    'prompt': task['prompt'],
+                    'result': task.get('result', ''),
+                    'type': task['type'],
+                    'user_id': task['user_id'],
+                    'short_task_id': task['short_task_id']
+                    })
+        if cursor == 0:
+            break
     return JSONResponse(tasks)
