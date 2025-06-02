@@ -31,8 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('toggle-btn');
 
     toggleBtn.addEventListener('click', function () {
-        sidebar.classList.toggle('collapsed');
-        updateSidebarItemsVisibility();
+        toggleSidebar();
     });
 });
 
@@ -76,21 +75,21 @@ function addTaskToUI(taskId, shortId, questionText) {
 
     const taskDiv = document.createElement('div');
     taskDiv.className = 'backend-response';
-    taskDiv.id = `task-${taskId}`;
+    taskDiv.id = `${taskId}`;
     taskDiv.innerHTML = `
-    <div class="task-header">
-        <span class="task-title">Вопрос: ${questionText}</span>
-    </div>
-    <div class="status status-waiting">
-        <span class="status-text">Статус: ожидание</span>
-        <img src="/static/loading_dog.gif" class="loading-gif" alt="Загрузка...">
-    </div>
-    <div class="result" id="result-${taskId}"></div>
-    <div class="toggle-container">
-    <button class="toggle-btn" id="btn-${taskId}" onclick="toggleResult('${taskId}')">
-        <span class="icon">−</span>
-        </button>
-    </div>`;
+<div class="task-header">
+    <span class="task-title">Вопрос: ${questionText}</span>
+</div>
+<div class="status status-waiting">
+    <span class="status-text">Статус: ожидание</span>
+    <img src="/static/loading_dog.gif" class="loading-gif" alt="Загрузка...">
+</div>
+<div class="result" id="result-${taskId}"></div>
+<div class="toggle-container">
+<button class="toggle-btn" id="btn-${taskId}" onclick="toggleResult('${taskId}')">
+    <span class="icon">−</span>
+    </button>
+</div>`;
     addSidebarItem(taskId, shortId, questionText)
     const container = document.getElementById('tasks');
     container.insertBefore(taskDiv, container.firstChild);
@@ -134,19 +133,21 @@ function addSidebarItem(taskId, shortId, text) {
         });
 
         this.classList.add('active');
-        const taskEl = document.getElementById(`task-${taskId}`);
+        const taskEl = document.getElementById(`${taskId}`);
         if (taskEl) {
             taskEl.classList.add('active');
         }
     });
+    document.querySelectorAll('.sidebar-item, .backend-response').forEach(el => {
+        el.classList.remove('active');
+    });
+    item.classList.add('active');
 
-    // Activate new item and scroll to it
-    // item.classList.add('active');
-    sidebarContent.appendChild(item);
-    // Change from appendChild() to insertBefore()
     sidebarContent.insertBefore(item, sidebarContent.firstChild);
     item.scrollIntoView({behavior: "smooth", block: "nearest"});
     updateSidebarItemsVisibility();
+
+    return item; // Возвращаем созданный элемент
 }
 
 function updateSidebarItemsVisibility() {
@@ -168,7 +169,7 @@ function updateSidebarItemsVisibility() {
 }
 
 function updateStatus(taskId, status, result = '') {
-    const el = document.getElementById(`task-${taskId}`);
+    const el = document.getElementById(`${taskId}`);
     if (el) {
         const statusEl = el.querySelector('.status');
         const statusText = statusEl.querySelector('.status-text');
@@ -195,32 +196,18 @@ function updateStatus(taskId, status, result = '') {
             if (loadingGif) loadingGif.remove();
         }
 
-        const icon = document.querySelector(`#btn-${taskId} .icon`);
-
         if (result) {
             try {
-                const parsedResult = JSON.parse(`${result}`).trim();
                 resultEl.innerHTML = `
-            <div class="result-text">${parsedResult}</div>
-            <div class="result-actions">
-                <button class="like-btn" onclick="handleFeedback('${taskId}', 'like', this)">👍</button>
-                <button class="dislike-btn" onclick="handleFeedback('${taskId}', 'dislike', this)">👎</button>
-                <button class="copy-btn" onclick="copyToClipboard('${taskId}', this)">📋</button>
-            </div>`;
+<div class="result-text">${result.trim()}</div>
+<div class="result-actions">
+    <button class="like-btn" onclick="handleFeedback('${taskId}', 'like', this)">👍</button>
+    <button class="dislike-btn" onclick="handleFeedback('${taskId}', 'dislike', this)">👎</button>
+    <button class="copy-btn" onclick="copyToClipboard('${taskId}', this)">📋</button>
+</div>`;
             } catch (e) {
                 resultEl.textContent = result;
             }
-
-            resultEl.classList.add('show');
-            icon.textContent = '▲';
-
-            // toggleBtnContainer.style.display = 'block';
-        } else {
-            resultEl.classList.remove('show');
-            resultEl.textContent = '';
-            icon.textContent = '▼';
-
-            // toggleBtnContainer.style.display = 'none';
         }
     }
 }
@@ -271,14 +258,30 @@ function subscribeToTask(taskId) {
 
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
+    const themeIcon = document.getElementById('theme-icon');
 
     if (currentTheme === 'dark') {
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('theme', 'light');
+        themeIcon.textContent = '🔆';
     } else {
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
+        themeIcon.textContent = '☾';
     }
+}
+
+function toggleSidebar() {
+    const currentStateCollapsed = sidebar.classList.contains('collapsed');
+
+    if (currentStateCollapsed) {
+        sidebar.classList.remove('collapsed');
+        localStorage.setItem('currentState', 'not-collapsed');
+    } else {
+        sidebar.classList.add('collapsed');
+        localStorage.setItem('currentState', 'collapsed');
+    }
+    updateSidebarItemsVisibility();
 }
 
 function handleFeedback(taskId, type, button) {
@@ -336,45 +339,76 @@ document.addEventListener('DOMContentLoaded', function() {
         themeIcon.textContent = '🔆';
     }
 
+    const savedSidebarState = localStorage.getItem('currentState') || 'not-collapsed';
+
+    if (savedSidebarState === 'collapsed') {
+        sidebar.classList.add('collapsed');
+        localStorage.setItem('currentState', 'collapsed');
+    } else {
+        sidebar.classList.remove('collapsed');
+        localStorage.setItem('currentState', 'not-collapsed');
+    }
+    updateSidebarItemsVisibility();
+
+
+
     fetch('/config').then(res => res.json()).then(config => {
         BACKEND_URL = config.BACKEND_URL;
         return BACKEND_URL;
     })
-        .then(() => {
-            return fetch(`${BACKEND_URL}/api/v1/tasks`, { credentials: 'include' });
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Network error')
-            if (response.status === 204) return [] // No content
-            return response.json()
-        })
-        .then(tasks => {
-            if (!tasks) return
-            // Reverse the array to maintain chronological order
-            tasks.forEach(task => {
-                try {
-                    const prompt = task.prompt;
-                    addTaskToUI(task.task_id, task.short_task_id, prompt);
+    .then(() => {
+        return fetch(`${BACKEND_URL}/api/v1/tasks`, { credentials: 'include' });
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Network error');
+        if (response.status === 204) return []; // No content
+        return response.json();
+    })
+    .then(tasks => {
+        if (!tasks || tasks.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            return;
+        }
 
-                    // Update status and sidebar
-                    const status = task.status === 'completed' ? 'выполнено' :
-                                 task.status === 'failed' ? 'ошибка' : 'ожидание';
-                    updateStatus(task.task_id, status, task.result || task.error);
+        // Переменная для хранения последней добавленной задачи
+        let lastAddedItem = null;
 
-                    const sidebarItem = document.querySelector(`.sidebar-item[data-item-number="${task.task_id}"]`);
-                    if (status === 'выполнено') sidebarItem.classList.add('completed');
-                    if (status === 'ошибка') sidebarItem.classList.add('error');
+        // Обрабатываем задачи в обратном порядке (чтобы последняя была первой в списке)
+        tasks.forEach(task => {
+            try {
+                const prompt = task.prompt;
+                addTaskToUI(task.task_id, task.short_task_id, prompt);
 
-                    if (status === 'ожидание') subscribeToTask(task.task_id);
-                } catch (e) {
-                    console.error('Error loading task:', e);
-                }
-            });
-        })
-        .catch(error => console.error('Error loading tasks:', error));
+                // Сохраняем ссылку на последний добавленный элемент
+                lastAddedItem = document.querySelector(`.sidebar-item[data-item-number="${task.task_id}"]`);
 
-    // Show empty state if no tasks
-    if (document.querySelectorAll('.backend-response').length === 0) {
+                // Update status and sidebar
+                const status = task.status === 'completed' ? 'выполнено' :
+                             task.status === 'failed' ? 'ошибка' : 'ожидание';
+                updateStatus(task.task_id, status, task.result || task.error);
+
+                const sidebarItem = document.querySelector(`.sidebar-item[data-item-number="${task.task_id}"]`);
+                if (status === 'выполнено') sidebarItem.classList.add('completed');
+                if (status === 'ошибка') sidebarItem.classList.add('error');
+
+                if (status === 'ожидание') subscribeToTask(task.task_id);
+            } catch (e) {
+                console.error('Error loading task:', e);
+            }
+        });
+
+        // Активируем последнюю задачу
+        if (lastAddedItem) {
+            lastAddedItem.classList.add('active');
+            const taskId = lastAddedItem.dataset.itemNumber;
+            const taskEl = document.getElementById(`${taskId}`);
+            if (taskEl) {
+                taskEl.classList.add('active');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading tasks:', error);
         document.getElementById('emptyState').style.display = 'block';
-    }
+    });
 });
