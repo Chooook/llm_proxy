@@ -4,8 +4,12 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>База знаний Службы внутреннего аудита</title>
+        <link rel="stylesheet" href="/static/css/introjs.min.css">
         <link rel="stylesheet" href="/static/style.css">
+        <script src="/static/js/intro.min.js"></script>
     </head>
+
+    <script src="/static/js/tutorial.js"></script>
 
     <body>
         <header>
@@ -18,22 +22,27 @@
                 <div class="theme-toggle" onclick="toggleTheme()">
                     <span id="theme-icon">🌙</span>
                 </div>
+                <div class="intro-btn">
+                    <span id="toggle-intro">❓</span>
+                </div>
             </div>
         </header>
 
         <div id="sidebar">
             <div id="sidebar-header">
                 <span class="sidebar-text">Ваши вопросы</span>
-                <button id="toggle-btn">≡</button>
+                <button data-tooltip="Нажмите, чтобы увидеть ваши вопросы" id="toggle-btn">≡</button>
             </div>
+            <!--
             <button id="add-item-btn" class="sidebar-text" title="Добавить элемент">+</button>
+            -->
             <div id="sidebar-content"></div>
         </div>
 
         <div class="container main-content">
             <div class="backend-demo">
                 <h1>Поиск по базе знаний</h1>
-                <div class="search-wrapper">
+                <div data-tooltip="Тут вы можете ввести свой вопрос, а для отправки нажать Enter или ???" class="search-wrapper">
                     <div class="textarea-wrapper">
                         <textarea id="inputParam" placeholder="Что вас интересует?" autofocus
                                   oninput="autoResize(this)"></textarea>
@@ -41,7 +50,11 @@
                     <button class="backend-btn" onclick="startTask()">🔍️</button>
                 </div>
                 <div class="divider" id="taskDivider"></div>
-                <div id="tasks"></div>
+                <div id="tasks">
+                    <div class="empty-state" id="emptyState">
+                        <p>Нет активных запросов. Задайте вопрос в поле выше.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
