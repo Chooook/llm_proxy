@@ -10,6 +10,8 @@ from utils.auth_utils import (
     create_guest_user, create_access_token, renew_token)
 from settings import settings
 
+FRONTEND_URL = f'http://{settings.HOST}:{settings.FRONTEND_PORT}'
+
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
@@ -29,7 +31,7 @@ app = FastAPI(debug=settings.DEBUG, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,4 +85,3 @@ async def root(request: Request, response: Response):
         samesite="lax",
         max_age=90 * 24 * 3600,
     )
-    return

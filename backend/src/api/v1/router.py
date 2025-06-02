@@ -67,10 +67,10 @@ async def list_queued_tasks_by_user(request: Request):
         return JSONResponse(tasks)
     cursor = 0
     while True:
-        cursor, keys = await redis.scan(cursor, match=f'task:*', count=100)
+        cursor, keys = await redis.scan(cursor, match='task:*', count=100)
         for task_id in keys:
             try:
-                raw_task = json.loads(await redis.get(task_id))
+                raw_task = await redis.get(task_id)
                 if not raw_task:
                     continue
                 task = json.loads(raw_task)
@@ -83,7 +83,7 @@ async def list_queued_tasks_by_user(request: Request):
                     'task_id': task_id,
                     'status': task['status'],
                     'prompt': task['prompt'],
-                    'result': task.get('result', ''),
+                    'result': str(task.get('result')),
                     'type': task['type'],
                     'user_id': task['user_id'],
                     'short_task_id': task['short_task_id']
