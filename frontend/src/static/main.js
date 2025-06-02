@@ -1,6 +1,5 @@
 ﻿// Получаем адрес бэкенда из .env по route из текущего приложения flask
 let BACKEND_URL;
-let tasks;
 
 function autoLogin() {
   try {
@@ -23,27 +22,7 @@ function autoLogin() {
     console.error('Ошибка сети:', err);
   }
 }
-
-function getTasks() {
-  return fetch(`${BACKEND_URL}/api/v1/tasks`, {
-    method: 'GET',
-    credentials: 'include'
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Ошибка сети при получении задач');
-      }
-      return response.json();
-    })
-    .catch(error => {
-      console.error('Не удалось получить задачи:', error);
-      return [];
-    });
-}
-
-autoLogin().then(() => {
-    tasks = getTasks();
-})
+autoLogin().then(r => {})
 
 const sidebar = document.getElementById('sidebar');
 const sidebarContent = document.getElementById('sidebar-content');
@@ -56,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSidebarItemsVisibility();
     });
 });
+
 const textarea = document.getElementById("inputParam");
 textarea.addEventListener(
     'keydown', function(event) {
@@ -75,40 +55,51 @@ function startTask() {
     document.getElementById('inputParam').value = '';
     autoResize(inputText);
     fetch(`${BACKEND_URL}/api/v1/enqueue`, {
-        credentials: 'include',
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ prompt: `${questionText}`})
+        credentials: 'include',
+        body: JSON.stringify({ prompt: questionText })
     })
     .then(res => res.json())
     .then(data => {
         const taskId = data.task_id;
-        addTaskToUI(taskId, questionText);
+        const shortId = data.short_task_id;
+        addTaskToUI(taskId, shortId, questionText);
         subscribeToTask(taskId);
     });
 }
 
-function addTaskToUI(taskId, questionText) {
+function addTaskToUI(taskId, shortId, questionText) {
+    // Hide empty state
+    const emptyState = document.getElementById('emptyState');
+    if (emptyState) emptyState.style.display = 'none';
+
     const taskDiv = document.createElement('div');
     taskDiv.className = 'backend-response';
     taskDiv.id = `task-${taskId}`;
     taskDiv.innerHTML = `
-        <div class="task-header">
-            <span class="task-title">Вопрос: ${questionText}</span>
-        </div>
-        <div class="status status-waiting">
-            Статус: ожидание
-            <img src="/static/loading_dog.gif" class="loading-gif" alt="Загрузка...">
-        </div>
-        <div class="result" id="result-${taskId}"></div>
-        <div class="toggle-container">
-            <button class="toggle-btn" id="btn-${taskId}" onclick="toggleResult('${taskId}')">
-                <span class="icon">−</span>
-            </button>
-        </div>`;
-    addSidebarItem(taskId, questionText)
+    <div class="task-header">
+        <span class="task-title">Вопрос: ${questionText}</span>
+    </div>
+    <div class="status status-waiting">
+        <span class="status-text">Статус: ожидание</span>
+        <img src="/static/loading_dog.gif" class="loading-gif" alt="Загрузка...">
+    </div>
+    <div class="result" id="result-${taskId}"></div>
+    <div class="toggle-container">
+    <button class="toggle-btn" id="btn-${taskId}" onclick="toggleResult('${taskId}')">
+        <span class="icon">−</span>
+        </button>
+    </div>`;
+    addSidebarItem(taskId, shortId, questionText)
     const container = document.getElementById('tasks');
     container.insertBefore(taskDiv, container.firstChild);
+
+    // Deactivate all other tasks
+    document.querySelectorAll('.backend-response').forEach(task => {
+        task.classList.remove('active');
+    });
+    taskDiv.classList.add('active');
 
     const divider = document.getElementById('taskDivider');
     if (container.children.length === 1) {
@@ -120,7 +111,7 @@ function addTaskToUI(taskId, questionText) {
     });
 }
 
-function addSidebarItem(taskId, text) {
+function addSidebarItem(taskId, shortId, text) {
     const item = document.createElement('div');
     item.className = 'sidebar-item';
     item.dataset.fullText = text;
@@ -128,7 +119,7 @@ function addSidebarItem(taskId, text) {
 
     const numberSpan = document.createElement('span');
     numberSpan.className = 'item-number';
-    numberSpan.textContent = taskId;
+    numberSpan.textContent = shortId;
 
     const textSpan = document.createElement('span');
     textSpan.className = 'sidebar-text';
@@ -138,10 +129,23 @@ function addSidebarItem(taskId, text) {
     item.appendChild(textSpan);
 
     item.addEventListener('click', function() {
-        alert('Вы выбрали: ' + text);
+        document.querySelectorAll('.sidebar-item, .backend-response').forEach(el => {
+            el.classList.remove('active');
+        });
+
+        this.classList.add('active');
+        const taskEl = document.getElementById(`task-${taskId}`);
+        if (taskEl) {
+            taskEl.classList.add('active');
+        }
     });
 
+    // Activate new item and scroll to it
+    // item.classList.add('active');
     sidebarContent.appendChild(item);
+    // Change from appendChild() to insertBefore()
+    sidebarContent.insertBefore(item, sidebarContent.firstChild);
+    item.scrollIntoView({behavior: "smooth", block: "nearest"});
     updateSidebarItemsVisibility();
 }
 
@@ -167,11 +171,11 @@ function updateStatus(taskId, status, result = '') {
     const el = document.getElementById(`task-${taskId}`);
     if (el) {
         const statusEl = el.querySelector('.status');
+        const statusText = statusEl.querySelector('.status-text');
         const resultEl = document.getElementById(`result-${taskId}`);
-        const toggleBtnContainer = el.querySelector('.toggle-container');
         const loadingGif = statusEl.querySelector('.loading-gif');
 
-        statusEl.textContent = `Статус: ${status}`;
+        statusText.textContent = `Статус: ${status}`;
         statusEl.className = 'status';
 
         if (status === 'ожидание') {
@@ -185,15 +189,17 @@ function updateStatus(taskId, status, result = '') {
             }
         } else if (status === 'выполнено') {
             statusEl.classList.add('status-done');
+            if (loadingGif) loadingGif.remove();
         } else if (status === 'ошибка') {
             statusEl.classList.add('status-error');
+            if (loadingGif) loadingGif.remove();
         }
 
         const icon = document.querySelector(`#btn-${taskId} .icon`);
 
         if (result) {
             try {
-                const parsedResult = JSON.parse(`${result}`);
+                const parsedResult = JSON.parse(`${result}`).trim();
                 resultEl.innerHTML = `
             <div class="result-text">${parsedResult}</div>
             <div class="result-actions">
@@ -208,13 +214,13 @@ function updateStatus(taskId, status, result = '') {
             resultEl.classList.add('show');
             icon.textContent = '▲';
 
-            toggleBtnContainer.style.display = 'block';
+            // toggleBtnContainer.style.display = 'block';
         } else {
             resultEl.classList.remove('show');
             resultEl.textContent = '';
             icon.textContent = '▼';
 
-            toggleBtnContainer.style.display = 'none';
+            // toggleBtnContainer.style.display = 'none';
         }
     }
 }
@@ -239,14 +245,17 @@ function toggleResult(taskId) {
 
 function subscribeToTask(taskId) {
     const eventSource = new EventSource(`${BACKEND_URL}/api/v1/subscribe/${taskId}`);
+    const sidebarItem = document.querySelector(`.sidebar-item[data-item-number="${taskId}"]`);
     eventSource.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
             if (data.status === 'completed') {
                 updateStatus(taskId, 'выполнено', data.result);
+                sidebarItem.classList.add('completed');
                 eventSource.close();
             } else if (data.status === 'failed') {
                 updateStatus(taskId, 'ошибка', data.error);
+                sidebarItem.classList.add('error');
                 eventSource.close();
             }
         } catch (e) {
@@ -325,5 +334,47 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         document.documentElement.removeAttribute('data-theme');
         themeIcon.textContent = '🔆';
+    }
+
+    fetch('/config').then(res => res.json()).then(config => {
+        BACKEND_URL = config.BACKEND_URL;
+        return BACKEND_URL;
+    })
+        .then(() => {
+            return fetch(`${BACKEND_URL}/api/v1/tasks`, { credentials: 'include' });
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network error')
+            if (response.status === 204) return [] // No content
+            return response.json()
+        })
+        .then(tasks => {
+            if (!tasks) return
+            // Reverse the array to maintain chronological order
+            tasks.forEach(task => {
+                try {
+                    const prompt = task.prompt;
+                    addTaskToUI(task.task_id, task.short_task_id, prompt);
+
+                    // Update status and sidebar
+                    const status = task.status === 'completed' ? 'выполнено' :
+                                 task.status === 'failed' ? 'ошибка' : 'ожидание';
+                    updateStatus(task.task_id, status, task.result || task.error);
+
+                    const sidebarItem = document.querySelector(`.sidebar-item[data-item-number="${task.task_id}"]`);
+                    if (status === 'выполнено') sidebarItem.classList.add('completed');
+                    if (status === 'ошибка') sidebarItem.classList.add('error');
+
+                    if (status === 'ожидание') subscribeToTask(task.task_id);
+                } catch (e) {
+                    console.error('Error loading task:', e);
+                }
+            });
+        })
+        .catch(error => console.error('Error loading tasks:', error));
+
+    // Show empty state if no tasks
+    if (document.querySelectorAll('.backend-response').length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
     }
 });
