@@ -80,7 +80,7 @@ async def list_queued_tasks_by_user(request: Request):
                 continue
             if task['user_id'] == user_id:
                 tasks.append({
-                    'task_id': task_id,
+                    'task_id': task_id.split(':')[1],
                     'status': task['status'],
                     'prompt': task['prompt'],
                     'result': str(task.get('result')),
