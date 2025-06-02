@@ -18,7 +18,8 @@ async def register_handlers(redis: Redis
         import llama_cpp
         if not os.path.exists(settings.MODEL_PATH):
             raise FileNotFoundError
-        await _handle_generate_local_task('test prompt', redis)
+        # TODO: добавить шаблонную задачу для проверки работы
+        # await _handle_generate_local_task('test prompt', redis)
         task_handlers['generate_local'] = _handle_generate_local_task
         logger.info("✅ Обработчик generate-local зарегистрирован")
     except ImportError:
@@ -35,7 +36,8 @@ async def register_handlers(redis: Redis
 
     try:
         import asyncpg
-        await _handle_generate_gp_task('test prompt', redis)
+        # TODO: добавить шаблонную задачу для проверки работы
+        # await _handle_generate_gp_task('test prompt', redis)
         task_handlers['generate_gp'] = _handle_generate_gp_task
         logger.info("✅ Обработчик generate_gp зарегистрирован")
     except ImportError:

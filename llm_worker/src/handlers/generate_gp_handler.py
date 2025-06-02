@@ -43,7 +43,8 @@ async def _handle_generate_gp_task(task_id: str, redis: Redis):
                 continue
             break
 
-        if not result:
+        if any(phrase in result
+               for phrase in ['Вопрос пользователя', 'еще не обработан']):
             raise RuntimeError(f"Ошибка обработки LLM через GP")
 
         result = result.strip()

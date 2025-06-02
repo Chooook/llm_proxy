@@ -11,12 +11,7 @@ from utils.redis_utils import cleanup_dlq, mark_task_failed, recover_tasks
 logger.add('worker.log', level=settings.LOGLEVEL, rotation='10 MB')
 
 
-async def main():
-    redis = aioredis.Redis.from_url(
-        f'redis://{settings.HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}',
-        decode_responses=True
-    )
-    task_handlers = asyncio.run(register_handlers(redis))
+async def main(redis):
 
     if not task_handlers:
         logger.error("❌ Нет доступных обработчиков задач!")
@@ -29,7 +24,7 @@ async def main():
         await redis.close()
 
 
-async def worker_loop(redis: aioredis.Redis, task_handlers: dict):
+async def worker_loop(redis: aioredis.Redis, handlers: dict):
     await recover_tasks(redis)
 
     while True:
@@ -42,7 +37,7 @@ async def worker_loop(redis: aioredis.Redis, task_handlers: dict):
             logger.info(f'📥 Получена задача: {task_id}')
 
             try:
-                await process_task(task_id, redis, task_handlers)
+                await process_task(task_id, redis, handlers)
                 await redis.lrem('processing_queue', 1, task_id)
             except Exception:
                 pass
@@ -53,7 +48,7 @@ async def worker_loop(redis: aioredis.Redis, task_handlers: dict):
 
 
 async def process_task(
-        task_id: str, redis: aioredis.Redis, task_handlers: dict):
+        task_id: str, redis: aioredis.Redis, handlers: dict):
     """Основной обработчик задач"""
     task_data = await redis.get(f'task:{task_id}')
     if not task_data:
@@ -61,7 +56,7 @@ async def process_task(
         return
 
     task = json.loads(task_data)
-    handler = task_handlers.get(task['type'])
+    handler = handlers.get(task['type'])
 
     if not handler:
         await mark_task_failed(
@@ -89,4 +84,9 @@ async def process_task(
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    redis_client = aioredis.Redis.from_url(
+        f'redis://{settings.HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}',
+        decode_responses=True
+    )
+    task_handlers = asyncio.run(register_handlers(redis_client))
+    asyncio.run(main(redis_client))
