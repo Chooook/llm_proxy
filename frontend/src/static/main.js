@@ -1,27 +1,28 @@
 ﻿// Получаем адрес бэкенда из .env по route из текущего приложения flask
 let BACKEND_URL;
-fetch('/config').then(res => res.json()).then(config => {
-    BACKEND_URL = config.BACKEND_URL;
-});
+let tasks;
 
-async function autoLogin() {
+function autoLogin() {
   try {
-    const response = await fetch('BACKEND_URL/', {
-      method: 'GET',
-      credentials: 'include'
-    });
-
-    if (response.ok) {
-      console.log('Автоматический вход выполнен');
-    } else {
-      console.error('Ошибка авто-логина');
-    }
+    return fetch('/config').then(res => res.json()).then(config => {
+        BACKEND_URL = config.BACKEND_URL;
+    })
+    .then(() => {
+        return fetch(`${BACKEND_URL}/`, {
+            credentials: 'include'
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+          console.log('Автоматический вход выполнен');
+        } else {
+          console.error('Ошибка авто-логина');
+        }
+    })
   } catch (err) {
     console.error('Ошибка сети:', err);
   }
 }
-
-await autoLogin();
 
 function getTasks() {
   return fetch(`${BACKEND_URL}/api/v1/tasks`, {
@@ -40,13 +41,9 @@ function getTasks() {
     });
 }
 
-let tasks;
-
-getTasks().then(userTasks => {
-  tasks = userTasks;
-  console.log('Задачи загружены:', userTasks);
-});
-
+autoLogin().then(() => {
+    tasks = getTasks();
+})
 
 const sidebar = document.getElementById('sidebar');
 const sidebarContent = document.getElementById('sidebar-content');
@@ -324,9 +321,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (savedTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
-        themeIcon.textContent = '🌙';
+        themeIcon.textContent = '☾';
     } else {
         document.documentElement.removeAttribute('data-theme');
-        themeIcon.textContent = '🌙';
+        themeIcon.textContent = '🔆';
     }
 });
