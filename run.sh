@@ -12,7 +12,7 @@ load_env() {
 }
 
 load_env "./backend/.env"
-load_env "./llm_worker/.env"
+load_env "./worker/.env"
 load_env "./frontend/.env"
 
 honcho start
