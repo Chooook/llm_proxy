@@ -7,7 +7,7 @@ members = [
     "backend",
     "frontend",
     "llm-proxy",
-    "llm-worker",
+    "worker",
 ]
 
 [[package]]
@@ -565,9 +565,9 @@ requires-dist = [
 dev = []
 
 [[package]]
-name = "llm-worker"
+name = "worker"
 version = "0.1.0"
-source = { virtual = "llm_worker" }
+source = { virtual = "worker" }
 dependencies = [
     { name = "aioredis" },
     { name = "asyncio-atexit" },
