@@ -1,14 +1,54 @@
-1. [x] Разделить requirements частей проекта в свои файлы
-2. [x] Переделать backend с flask на fastapi+uvicorn+sse_starlette
-3. [x] Добавить redis вместо sqlite (redis, redis unix)
-4. [x] Реализовать search, подключить очередь redis
-5. [ ] Dummy handler for tests
-6. [ ] Redis to PG/GP if >100 tasks (.env param) and at server stop
-7. [ ] Renew event-stream connect at page reload
-8. [ ] Добавить postgres бд для мониторинга и архива задач, использовать асинхронно (tortoise_db, asyncpg)
-9. [ ] Переделать frontend на react (npm+)
-10. [ ] Реализовать мониторинг всего что только можно (loguru, prometheus, grafana)
-11. [ ] Реализовать контроль зависимостей для разных пакетных менеджеров
-12. [ ] Переделать всё на docker-compose
-13. [ ] Реализовать search на основе фреймворка для развертывания llm
-14. [ ] Реализовать полнотекстовый поиск в качестве отдельного сервиса
+- [x] Разделить requirements частей проекта в свои файлы
+- [x] Переделать backend с flask на fastapi+uvicorn+sse_starlette
+- [x] Добавить redis вместо sqlite (redis, redis unix)
+- [x] Реализовать search, подключить очередь redis
+- [x] Dummy handler for tests
+- [ ] Redis to PG/GP if >100 tasks (.env param) and at server stop
+- [x] Renew event-stream connect at page reload
+- [ ] Добавить postgres бд для мониторинга и архива задач, использовать асинхронно (tortoise_db, asyncpg)
+- [ ] Переделать frontend на react (npm+)
+- [ ] Реализовать мониторинг всего что только можно (loguru, prometheus, grafana)
+- [ ] Реализовать контроль зависимостей для разных пакетных менеджеров
+- [ ] Переделать всё на docker-compose
+- [ ] Реализовать search на основе фреймворка для развертывания llm
+- [ ] Реализовать полнотекстовый поиск в качестве отдельного сервиса
+- [ ] TODO backend:
+- [ ] add auto-kinit if kerberos exists (password from env variable)
+- [ ] add tasks archiving to GP from redis
+- [ ] add user feedback saving to GP
+- [ ] add logging with loguru
+- [ ] add default redis ttl to settings and env (30 days)
+- [ ] add task feedback saving to redis with api endpoint
+- [ ] TODO: use redis as Depends in backend
+- [ ] TODO: check are tasks can be in dead letters
+- [ ] TODO: add loguru to backend
+- [ ] TODO: add TaskStatus Enum model
+- [ ] TODO: Добавить обработку relevant_docs frontend
+- [ ] TODO worker: rewrite to save to redis when registered, add load handlers to
+- [ ]  backend at startup and delete all handlers after worker stop
+- [ ] FIXME: handlers have to be same in backend and worker models,
+- [ ]  in redis and frontend. Make one place to define handlers
+- [ ]  TODO worker:
+- [ ]   add configurable knowledge bases update microservice
+- [ ]   add configurable models microservice (intfloat, bge)
+- [ ]   add configurable GC API microservice with 5 sec delay
+- [ ]   конфиг хэндлеров в yaml, запускать на воркере, записывать рабочие в
+- [ ]   redis, при запуске проверять нет ли уже обработчиков в redis, если есть,
+- [ ]   при несоответствии выводить ошибку и завершать работу, при корректном
+- [ ]   завершении работы удалять обработчики из redis, оставить поле для
+- [ ]   указания количества worker, которые сейчас активны, если больше 1 -
+- [ ]   просто уменьшить число в redis, не удалять обработчики из redis.
+- [ ]   Обработчики подтягивать с фронта по sse, при изменении конфига,
+- [ ]   проверять раз в 15 минут, например (пром) и раз в 15 секунд на деве. Не
+- [ ]   забыть удалить схему TaskType в воркере и backend, если не получится
+- [ ]   формировать её динамически (маловероятно). Добавить на фронте обработчик
+- [ ]   для автоматической подстановки обработчиков в выпадающее меню,
+- [ ]   если возможно. Если обработчиков нет - выводить отдельное сообщение,
+- [ ]   либо добавить html элемент, который будет зеленым или красным в
+- [ ]   зависимости от наличия обработчиков.
+- [ ]   Добавить нагрузку на ГПУ раз в 3.5 часа, чтобы не перезапускать контейнер
+- [ ] TODO: добавить механизм подгрузки конфига с путями и другой инфой в handlers
+- [ ] TODO: добавить ленивую загрузку моделей в handlers (?)
+- [ ] TODO worker: replace with auto freeze to GP and move to backend lifespan: asyncio.create_task(cleanup_dlq(redis))
+- [ ] TODO frontend: генерировать типы из taskTypeNames, получать можно с backend (добавить endpoint, который читает конфиг)
+- [ ] TODO frontend: вытащить все что выполняется при инициализации в отдельные функции и в отдельный модуль
